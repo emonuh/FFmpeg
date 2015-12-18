@@ -1210,9 +1210,15 @@ static void do_video_out(AVFormatContext *s,
                        av_ts2str(pkt.dts), av_ts2timestr(pkt.dts, &enc->time_base));
             }
 
-            if (pkt.pts == AV_NOPTS_VALUE && !(enc->codec->capabilities & AV_CODEC_CAP_DELAY))
+            if (pkt.pts == AV_NOPTS_VALUE && !(enc->codec->capabilities & AV_CODEC_CAP_DELAY)) {
+                av_log(NULL, AV_LOG_DEBUG, "hogehogehoge\n");
                 pkt.pts = ost->sync_opts;
+            }
 
+//            av_log(NULL, AV_LOG_DEBUG, "pts:%lld, dts:%lld, duration:%d, conv-duration:%lld, timebase-a:%d/%d, timebase-b:%d/%d\n",
+//                   pkt.pts, pkt.dts, pkt.duration, pkt.convergence_duration,
+//                   enc->time_base.num, enc->time_base.den,
+//                   ost->st->time_base.num, ost->st->time_base.den);
             av_packet_rescale_ts(&pkt, enc->time_base, ost->st->time_base);
 
             if (debug_ts) {
@@ -1367,6 +1373,11 @@ static int reap_filters(int flush)
                 // avoid exact midoints to reduce the chance of rounding differences, this can be removed in case the fps code is changed to work with integers
                 float_pts += FFSIGN(float_pts) * 1.0 / (1<<17);
 
+//                if (filter->inputs[0]->type == AVMEDIA_TYPE_AUDIO)
+//                av_log(NULL, AV_LOG_DEBUG, "[[[debug]]] filtered_frame->pts%lld:, filter->inputs->inputs[0]->time_base:%d/%d, enc->time_base:%d/%d, start_time:%lld\n",
+//                       filtered_frame->pts, ost->filter->filter->inputs[0]->time_base.num, ost->filter->filter->inputs[0]->time_base.den,
+//                       enc->time_base.num, enc->time_base.den, start_time
+//                );
                 filtered_frame->pts =
                     av_rescale_q(filtered_frame->pts, filter->inputs[0]->time_base, enc->time_base) -
                     av_rescale_q(start_time, AV_TIME_BASE_Q, enc->time_base);
