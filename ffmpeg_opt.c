@@ -1846,6 +1846,7 @@ static int init_complex_filters(void)
 {
     int i, ret = 0;
 
+    av_log(NULL, AV_LOG_DEBUG, "init_complex_filters > nb_filtergraphs:%d\n", nb_filtergraphs);
     for (i = 0; i < nb_filtergraphs; i++) {
         ret = init_complex_filtergraph(filtergraphs[i]);
         if (ret < 0)
@@ -1858,6 +1859,7 @@ static int configure_complex_filters(void)
 {
     int i, ret = 0;
 
+    av_log(NULL, AV_LOG_DEBUG, "configure_complex_filters > nb_filtergraphs:%d\n", nb_filtergraphs);
     for (i = 0; i < nb_filtergraphs; i++)
         if (!filtergraphs[i]->graph &&
             (ret = configure_filtergraph(filtergraphs[i])) < 0)
@@ -1922,6 +1924,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
     oc->interrupt_callback = int_cb;
 
     /* create streams for all unlabeled output pads */
+    av_log(NULL, AV_LOG_DEBUG, "open_output_file > nb_filtergraphs:%d\n", nb_filtergraphs);
     for (i = 0; i < nb_filtergraphs; i++) {
         FilterGraph *fg = filtergraphs[i];
         for (j = 0; j < fg->nb_outputs; j++) {
@@ -1979,6 +1982,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
             }
         }
     } else if (!o->nb_stream_maps) {
+        av_log(NULL, AV_LOG_DEBUG, "[INTO] open_output_file > !o->nb_stream_maps\n");
         char *subtitle_codec_name = NULL;
         /* pick the "best" stream of each type */
 
@@ -2059,6 +2063,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
             }
         }
     } else {
+        av_log(NULL, AV_LOG_DEBUG, "[INTO] open_output_file > else\n");
         for (i = 0; i < o->nb_stream_maps; i++) {
             StreamMap *map = &o->stream_maps[i];
 

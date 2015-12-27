@@ -487,6 +487,95 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 //FIXME merge with compute_pkt_fields
 static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] nux.c > compute_pkt_fields2\n");
+    av_log(NULL, AV_LOG_DEBUG, "===== AVStream =====\n"
+           "index:%d\n"
+           "id:%d\n"
+           "time_base:%d/%d\n"
+           "start_time:%lld\n"
+           "duration:%lld\n"
+           "nb_frames:%lld\n"
+           "disposition:%d\n"
+           "discard:%d\n"
+           "sample_aspect_ratio:%d/%d\n"
+           "avg_frame_rate:%d/%d\n"
+           "nb_side_data:%d\n"
+           "event_flags:%d\n"
+           "pts_wrap_bits:%d\n"
+           "first_dts:%lld\n"
+           "cur_dts:%lld\n"
+           "last_IP_pts:%lld\n"
+           "last_IP_duration:%d\n"
+           "probe_packets:%d\n"
+           "codec_info_nb_frames:%d\n"
+           "need_parsing:%d\n"
+           "nb_index_entries:%d\n"
+           "r_frame_rate:%d/%d\n"
+           "stream_identifier:%d\n"
+           "interleaver_chunk_size:%lld\n"
+           "interleaver_chunk_duration:%lld\n"
+           "request_probe:%d\n"
+           "skip_to_keyframe:%d\n"
+           "skip_samples:%d\n"
+           "start_skip_samples:%lld\n"
+           "first_discard_sample:%lld\n"
+           "last_discard_sample:%lld\n"
+           "nb_decoded_frames:%d\n"
+           "mux_ts_offset:%lld\n"
+           "pts_wrap_reference:%lld\n"
+           "pts_wrap_behavior:%d\n"
+           "update_initial_durations_done:%d\n"
+           "last_dts_for_order_check:%lld\n"
+           "dts_ordered:%d\n"
+           "dts_misordered:%d\n"
+           "inject_global_side_data:%d\n"
+           "recommended_encoder_configuration:%s\n"
+           "display_aspect_ratio:%d/%d\n"
+           "===== End =====\n",
+           st->index,
+           st->id,
+           st->time_base.num, st->time_base.den,
+           st->start_time,
+           st->duration,
+           st->nb_frames,
+           st->disposition,
+           st->discard,
+           st->sample_aspect_ratio.num, st->sample_aspect_ratio.den,
+           st->avg_frame_rate.num, st->avg_frame_rate.den,
+           st->nb_side_data,
+           st->event_flags,
+           st->pts_wrap_bits,
+           st->first_dts,
+           st->cur_dts,
+           st->last_IP_pts,
+           st->last_IP_duration,
+           st->probe_packets,
+           st->codec_info_nb_frames,
+           st->need_parsing,
+           st->nb_index_entries,
+           st->r_frame_rate.num, st->r_frame_rate.den,
+           st->stream_identifier,
+           st->interleaver_chunk_size,
+           st->interleaver_chunk_duration,
+           st->request_probe,
+           st->skip_to_keyframe,
+           st->skip_samples,
+           st->start_skip_samples,
+           st->first_discard_sample,
+           st->last_discard_sample,
+           st->nb_decoded_frames,
+           st->mux_ts_offset,
+           st->pts_wrap_reference,
+           st->pts_wrap_behavior,
+           st->update_initial_durations_done,
+           st->last_dts_for_order_check,
+           st->dts_ordered,
+           st->dts_misordered,
+           st->inject_global_side_data,
+           st->recommended_encoder_configuration,
+           st->display_aspect_ratio.num, st->display_aspect_ratio.den
+    );
+
     int delay = FFMAX(st->codec->has_b_frames, st->codec->max_b_frames > 0);
     int num, den, i;
     int frame_size;
@@ -542,6 +631,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         av_log(s, AV_LOG_ERROR,
                "Application provided invalid, non monotonically increasing dts to muxer in stream %d: %s >= %s\n",
                st->index, av_ts2str(st->cur_dts), av_ts2str(pkt->dts));
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] nux.c > compute_pkt_fields2 (error1)\n");
         return AVERROR(EINVAL);
     }
     if (pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts < pkt->dts) {
@@ -549,6 +639,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
                "pts (%s) < dts (%s) in stream %d\n",
                av_ts2str(pkt->pts), av_ts2str(pkt->dts),
                st->index);
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] nux.c > compute_pkt_fields2 (error2)\n");
         return AVERROR(EINVAL);
     }
 
@@ -577,6 +668,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         frac_add(st->priv_pts, (int64_t)st->time_base.den * st->codec->time_base.num);
         break;
     }
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] nux.c > compute_pkt_fields2\n");
     return 0;
 }
 
@@ -690,11 +782,14 @@ static int check_packet(AVFormatContext *s, AVPacket *pkt)
 
 int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] nux.c > av_write_frame\n");
     int ret;
 
     ret = check_packet(s, pkt);
-    if (ret < 0)
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] nux.c > av_write_frame (error1)\n");
         return ret;
+    }
 
     if (!pkt) {
         if (s->oformat->flags & AVFMT_ALLOW_FLUSH) {
@@ -703,15 +798,19 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
                 avio_flush(s->pb);
             if (ret >= 0 && s->pb && s->pb->error < 0)
                 ret = s->pb->error;
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] nux.c > av_write_frame (%d)\n", ret);
             return ret;
         }
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] nux.c > av_write_frame (success1)\n");
         return 1;
     }
 
     ret = compute_pkt_fields2(s, s->streams[pkt->stream_index], pkt);
 
-    if (ret < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
+    if (ret < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] nux.c > av_write_frame (error2)\n");
         return ret;
+    }
 
     ret = write_packet(s, pkt);
     if (ret >= 0 && s->pb && s->pb->error < 0)
@@ -719,6 +818,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 
     if (ret >= 0)
         s->streams[pkt->stream_index]->nb_frames++;
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] nux.c > av_write_frame\n");
     return ret;
 }
 
@@ -931,6 +1031,7 @@ static int interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *in, in
 
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] nux.c > av_interleaved_write_frame\n");
     int ret, flush = 0;
 
     av_log(NULL, AV_LOG_DEBUG, "===== Write Frame Packet =====\n"
@@ -956,8 +1057,10 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
     );
 
     ret = check_packet(s, pkt);
-    if (ret < 0)
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] nux.c > av_interleaved_write_frame (error1)\n");
         goto fail;
+    }
 
     if (pkt) {
         AVStream *st = s->streams[pkt->stream_index];
@@ -966,11 +1069,14 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_TRACE, "av_interleaved_write_frame size:%d dts:%s pts:%s\n",
                 pkt->size, av_ts2str(pkt->dts), av_ts2str(pkt->pts));
 
-        if ((ret = compute_pkt_fields2(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
+        if ((ret = compute_pkt_fields2(s, st, pkt)) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] nux.c > av_interleaved_write_frame (error2)\n");
             goto fail;
+        }
 
         if (pkt->dts == AV_NOPTS_VALUE && !(s->oformat->flags & AVFMT_NOTIMESTAMPS)) {
             ret = AVERROR(EINVAL);
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] nux.c > av_interleaved_write_frame (error3)\n");
             goto fail;
         }
     } else {
@@ -986,8 +1092,10 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
             av_init_packet(pkt);
             pkt = NULL;
         }
-        if (ret <= 0) //FIXME cleanup needed for ret<0 ?
+        if (ret <= 0) { //FIXME cleanup needed for ret<0 ?
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] nux.c > av_interleaved_write_frame (error4)\n");
             return ret;
+        }
 
         ret = write_packet(s, &opkt);
         if (ret >= 0)
@@ -995,10 +1103,14 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
 
         av_free_packet(&opkt);
 
-        if (ret < 0)
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] nux.c > av_interleaved_write_frame (error5)\n");
             return ret;
-        if(s->pb && s->pb->error)
+        }
+        if(s->pb && s->pb->error) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] nux.c > av_interleaved_write_frame (error6)\n");
             return s->pb->error;
+        }
     }
 fail:
     av_packet_unref(pkt);

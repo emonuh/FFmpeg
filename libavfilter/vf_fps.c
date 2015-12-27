@@ -155,15 +155,18 @@ static int request_frame(AVFilterLink *outlink)
 
 static int write_to_fifo(AVFifoBuffer *fifo, AVFrame *buf)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] vf_fps.c > write_to_fifo\n");
     int ret;
 
     if (!av_fifo_space(fifo) &&
         (ret = av_fifo_realloc2(fifo, 2*av_fifo_size(fifo)))) {
         av_frame_free(&buf);
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] vf_fps.c > write_to_fifo (av_fifo_realloc2)\n");
         return ret;
     }
 
     av_fifo_generic_write(fifo, &buf, sizeof(buf), NULL);
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] vf_fps.c > write_to_fifo (av_fifo_generic_write)\n");
     return 0;
 }
 

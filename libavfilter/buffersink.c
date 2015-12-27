@@ -84,6 +84,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int add_buffer_ref(AVFilterContext *ctx, AVFrame *ref)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] buffersink.c > add_buffer_ref\n");
     BufferSinkContext *buf = ctx->priv;
 
     if (av_fifo_space(buf->fifo) < FIFO_INIT_ELEMENT_SIZE) {
@@ -92,12 +93,14 @@ static int add_buffer_ref(AVFilterContext *ctx, AVFrame *ref)
             av_log(ctx, AV_LOG_ERROR,
                    "Cannot buffer more frames. Consume some available frames "
                    "before adding new ones.\n");
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] buffersink.c > add_buffer_ref (error)\n");
             return AVERROR(ENOMEM);
         }
     }
 
     /* cache frame */
     av_fifo_generic_write(buf->fifo, &ref, FIFO_INIT_ELEMENT_SIZE, NULL);
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] buffersink.c > add_buffer_ref\n");
     return 0;
 }
 
@@ -127,34 +130,47 @@ int attribute_align_arg av_buffersink_get_frame(AVFilterContext *ctx, AVFrame *f
 
 int attribute_align_arg av_buffersink_get_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flags)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] buffersink.c > av_buffersink_get_frame_flags\n");
     BufferSinkContext *buf = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     int ret;
     AVFrame *cur_frame;
+    av_log(NULL, AV_LOG_DEBUG, "[VALUE] BufferSinkContext name:%s, wndx:%d, rndx:%d\n", ctx->name, buf->fifo->wndx, buf->fifo->rndx);
 
     /* no picref available, fetch it from the filterchain */
     if (!av_fifo_size(buf->fifo)) {
-        if (inlink->closed)
+        if (inlink->closed) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] buffersink.c > av_buffersink_get_frame_flags (error1)\n");
             return AVERROR_EOF;
-        if (flags & AV_BUFFERSINK_FLAG_NO_REQUEST)
+        }
+        if (flags & AV_BUFFERSINK_FLAG_NO_REQUEST) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] buffersink.c > av_buffersink_get_frame_flags (error2)\n");
             return AVERROR(EAGAIN);
-        if ((ret = ff_request_frame(inlink)) < 0)
+        }
+        if ((ret = ff_request_frame(inlink)) < 0) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] buffersink.c > av_buffersink_get_frame_flags (error3)\n");
             return ret;
+        }
     }
 
-    if (!av_fifo_size(buf->fifo))
+    if (!av_fifo_size(buf->fifo)) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] buffersink.c > av_buffersink_get_frame_flags (error4)\n");
         return AVERROR(EINVAL);
+    }
 
     if (flags & AV_BUFFERSINK_FLAG_PEEK) {
         cur_frame = *((AVFrame **)av_fifo_peek2(buf->fifo, 0));
-        if ((ret = av_frame_ref(frame, cur_frame)) < 0)
+        if ((ret = av_frame_ref(frame, cur_frame)) < 0) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] buffersink.c > av_buffersink_get_frame_flags (error5)\n");
             return ret;
+        }
     } else {
         av_fifo_generic_read(buf->fifo, &cur_frame, sizeof(cur_frame), NULL);
         av_frame_move_ref(frame, cur_frame);
         av_frame_free(&cur_frame);
     }
 
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] buffersink.c > av_buffersink_get_frame_flags\n");
     return 0;
 }
 
@@ -246,15 +262,18 @@ AVABufferSinkParams *av_abuffersink_params_alloc(void)
 
 static av_cold int common_init(AVFilterContext *ctx)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] buffersink.c > common_init\n");
     BufferSinkContext *buf = ctx->priv;
 
     buf->fifo = av_fifo_alloc_array(FIFO_INIT_SIZE, FIFO_INIT_ELEMENT_SIZE);
     if (!buf->fifo) {
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate fifo\n");
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] buffersink.c > common_init (error)\n");
         return AVERROR(ENOMEM);
     }
     buf->warning_limit = 100;
     buf->next_pts = AV_NOPTS_VALUE;
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] buffersink.c > common_init\n");
     return 0;
 }
 

@@ -342,11 +342,14 @@ void ff_tlog_link(void *ctx, AVFilterLink *link, int end)
 
 int ff_request_frame(AVFilterLink *link)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] avfilter.c > ff_request_frame\n");
     int ret = -1;
     FF_TPRINTF_START(NULL, request_frame); ff_tlog_link(NULL, link, 1);
 
-    if (link->closed)
+    if (link->closed) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] avfilter.c > ff_request_frame (error1)\n");
         return AVERROR_EOF;
+    }
     av_assert0(!link->frame_requested);
     link->frame_requested = 1;
     while (link->frame_requested) {
@@ -367,6 +370,11 @@ int ff_request_frame(AVFilterLink *link)
             av_assert0(!link->frame_requested ||
                        link->flags & FF_LINK_FLAG_REQUEST_LOOP);
         }
+    }
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] avfilter.c > ff_request_frame (error2)\n");
+    } else {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] avfilter.c > ff_request_frame\n");
     }
     return ret;
 }
@@ -1018,6 +1026,7 @@ static int default_filter_frame(AVFilterLink *link, AVFrame *frame)
 
 static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] avfilter.c > ff_filter_frame_framed\n");
     int (*filter_frame)(AVFilterLink *, AVFrame *);
     AVFilterContext *dstctx = link->dst;
     AVFilterPad *dst = link->dstpad;
@@ -1028,6 +1037,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
 
     if (link->closed) {
         av_frame_free(&frame);
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] avfilter.c > ff_filter_frame_framed (error1)\n");
         return AVERROR_EOF;
     }
 
@@ -1047,16 +1057,20 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
             break;
         default:
             ret = AVERROR(EINVAL);
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] avfilter.c > ff_filter_frame_framed (error2)\n");
             goto fail;
         }
         if (!out) {
             ret = AVERROR(ENOMEM);
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] avfilter.c > ff_filter_frame_framed (error3)\n");
             goto fail;
         }
 
         ret = av_frame_copy_props(out, frame);
-        if (ret < 0)
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] avfilter.c > ff_filter_frame_framed (error4)\n");
             goto fail;
+        }
 
         switch (link->type) {
         case AVMEDIA_TYPE_VIDEO:
@@ -1071,6 +1085,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
             break;
         default:
             ret = AVERROR(EINVAL);
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] avfilter.c > ff_filter_frame_framed (error5)\n");
             goto fail;
         }
 
@@ -1105,6 +1120,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     link->frame_count++;
     link->frame_requested = 0;
     ff_update_link_current_pts(link, pts);
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] avfilter.c > ff_filter_frame_framed\n");
     return ret;
 
 fail:
@@ -1115,6 +1131,7 @@ fail:
 
 static int ff_filter_frame_needs_framing(AVFilterLink *link, AVFrame *frame)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] avfilter.c > ff_filter_frame_needs_framing\n");
     int insamples = frame->nb_samples, inpos = 0, nb_samples;
     AVFrame *pbuf = link->partial_buf;
     int nb_channels = av_frame_get_channels(frame);
@@ -1129,6 +1146,7 @@ static int ff_filter_frame_needs_framing(AVFilterLink *link, AVFrame *frame)
             if (!pbuf) {
                 av_log(link->dst, AV_LOG_WARNING,
                        "Samples dropped due to memory allocation failure.\n");
+                av_log(NULL, AV_LOG_DEBUG, "[OUT] avfilter.c > ff_filter_frame_needs_framing (success1)\n");
                 return 0;
             }
             av_frame_copy_props(pbuf, frame);
@@ -1152,11 +1170,18 @@ static int ff_filter_frame_needs_framing(AVFilterLink *link, AVFrame *frame)
     }
     av_frame_free(&frame);
     link->partial_buf = pbuf;
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] avfilter.c > ff_filter_frame_needs_framing (error)\n");
+    } else {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] avfilter.c > ff_filter_frame_needs_framing (success2)\n");
+    }
     return ret;
 }
 
 int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
 {
+    int ret = 0;
+    av_log(NULL, AV_LOG_DEBUG, "[IN] avfilter.c > ff_filter_frame\n");
     FF_TPRINTF_START(NULL, filter_frame); ff_tlog_link(NULL, link, 1); ff_tlog(NULL, " "); ff_tlog_ref(NULL, frame, 1);
 
     /* Consistency checks */
@@ -1183,10 +1208,17 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
         (link->partial_buf ||
          frame->nb_samples < link->min_samples ||
          frame->nb_samples > link->max_samples)) {
-        return ff_filter_frame_needs_framing(link, frame);
+        ret = ff_filter_frame_needs_framing(link, frame);
     } else {
-        return ff_filter_frame_framed(link, frame);
+        ret = ff_filter_frame_framed(link, frame);
     }
+
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] avfilter.c > ff_filter_frame (error)\n");
+    } else {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] avfilter.c > ff_filter_frame\n");
+    }
+    return ret;
 }
 
 const AVClass *avfilter_get_class(void)

@@ -1885,6 +1885,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
                                               const AVFrame *frame,
                                               int *got_packet_ptr)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] libavcodec/utils.c > avcodec_encode_audio2\n");
     AVFrame *extended_frame = NULL;
     AVFrame *padded_frame = NULL;
     int ret;
@@ -1896,6 +1897,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     if (!(avctx->codec->capabilities & AV_CODEC_CAP_DELAY) && !frame) {
         av_free_packet(avpkt);
         av_init_packet(avpkt);
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] libavcodec/utils.c > avcodec_encode_audio2 (no frame)\n");
         return 0;
     }
 
@@ -1906,13 +1908,16 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "Encoding to a planar sample format, "
                                         "with more than %d channels, but extended_data is not set.\n",
                    AV_NUM_DATA_POINTERS);
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] libavcodec/utils.c > avcodec_encode_audio2 (error1)\n");
             return AVERROR(EINVAL);
         }
         av_log(avctx, AV_LOG_WARNING, "extended_data is not set.\n");
 
         extended_frame = av_frame_alloc();
-        if (!extended_frame)
+        if (!extended_frame) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] libavcodec/utils.c > avcodec_encode_audio2 (error2)\n");
             return AVERROR(ENOMEM);
+        }
 
         memcpy(extended_frame, frame, sizeof(AVFrame));
         extended_frame->extended_data = extended_frame->data;
@@ -1932,14 +1937,17 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
             if (frame->nb_samples > avctx->frame_size) {
                 av_log(avctx, AV_LOG_ERROR, "more samples than frame size (avcodec_encode_audio2)\n");
                 ret = AVERROR(EINVAL);
+                av_log(NULL, AV_LOG_DEBUG, "[OUT] libavcodec/utils.c > avcodec_encode_audio2 (error3)\n");
                 goto end;
             }
         } else if (!(avctx->codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE)) {
             if (frame->nb_samples < avctx->frame_size &&
                 !avctx->internal->last_audio_frame) {
                 ret = pad_last_frame(avctx, &padded_frame, frame);
-                if (ret < 0)
+                if (ret < 0) {
+                    av_log(NULL, AV_LOG_DEBUG, "[OUT] libavcodec/utils.c > avcodec_encode_audio2 (error4)\n");
                     goto end;
+                }
 
                 frame = padded_frame;
                 avctx->internal->last_audio_frame = 1;
@@ -1948,6 +1956,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
             if (frame->nb_samples != avctx->frame_size) {
                 av_log(avctx, AV_LOG_ERROR, "nb_samples (%d) != frame_size (%d) (avcodec_encode_audio2)\n", frame->nb_samples, avctx->frame_size);
                 ret = AVERROR(EINVAL);
+                av_log(NULL, AV_LOG_DEBUG, "[OUT] libavcodec/utils.c > avcodec_encode_audio2 (error5)\n");
                 goto end;
             }
         }
@@ -2031,6 +2040,8 @@ frame->decode_error_flags,
 frame->channels,
 frame->pkt_size
 );
+} else {
+av_log(NULL, AV_LOG_DEBUG, "===== Audio encode Frame =====\nNULL\n===== End =====\n");
 }
 
     ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
@@ -2082,6 +2093,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         avctx->frame_number++;
     }
 
+if (frame) {
+    av_log(NULL, AV_LOG_DEBUG, "[CONNECT] frame.pkt_pos:%lld = packet.pts(dts):%lld(%lld)\n", frame->pkt_pos, avpkt->pts, avpkt->dts);
+} else {
+    av_log(NULL, AV_LOG_DEBUG, "[CONNECT] frame:NULL = packet.pts(dts):%lld(%lld)\n", avpkt->pts, avpkt->dts);
+}
+
 av_log(NULL, AV_LOG_DEBUG, "===== Audio Encoded Packet =====\n"
 "pts:%lld\n"
 "dts:%lld\n"
@@ -2107,6 +2124,7 @@ avpkt->convergence_duration
     if (ret < 0 || !*got_packet_ptr) {
         av_free_packet(avpkt);
         av_init_packet(avpkt);
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] libavcodec/utils.c > avcodec_encode_audio2 (error6)\n");
         goto end;
     }
 
@@ -2123,6 +2141,9 @@ end:
     avctx->delay = avctx->initial_padding;
 #endif
 
+    if (ret > 0) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] libavcodec/utils.c > avcodec_encode_audio2\n");
+    }
     return ret;
 }
 
@@ -2262,6 +2283,305 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
                                               const AVFrame *frame,
                                               int *got_packet_ptr)
 {
+av_log(NULL, AV_LOG_DEBUG, "[IN] libavcodec/utils.c > avcodec_encode_video2\n");
+//av_log(NULL, AV_LOG_DEBUG, "===== Video encode AVCodecContext =====\n"
+//"bit_rate:%d\n"
+//"bit_rate_tolerance:%d\n"
+//"global_quality:%d\n"
+//"compression_level:%d\n"
+//"flags:%d\n"
+//"flags2:%d\n"
+//"extradata_size:%d\n"
+//"time_base:%d/%d\n"
+//"ticks_per_frame:%d\n"
+//"delay:%d\n"
+//"width:%d\n"
+//"height:%d\n"
+//"coded_width:%d\n"
+//"coded_height:%d\n"
+//"gop_size:%d\n"
+//"pix_fmt:%d\n"
+//"max_b_frames:%d\n"
+//"b_quant_factor:%g\n"
+//"b_frame_strategy:%d\n"
+//"b_quant_offset:%g\n"
+//"has_b_frames:%d\n"
+//"mpeg_quant:%d\n"
+//"i_quant_factor:%g\n"
+//"i_quant_offset:%g\n"
+//"lumi_masking:%g\n"
+//"temporal_cplx_masking:%g\n"
+//"spatial_cplx_masking:%g\n"
+//"p_masking:%g\n"
+//"dark_masking:%g\n"
+//"slice_count:%d\n"
+//"prediction_method:%d\n"
+//"sample_aspect_ratio:%d/%d\n"
+//"me_cmp:%d\n"
+//"me_sub_cmp:%d\n"
+//"mb_cmp:%d\n"
+//"ildct_cmp:%d\n"
+//"dia_size:%d\n"
+//"last_predictor_count:%d\n"
+//"pre_me:%d\n"
+//"me_pre_cmp:%d\n"
+//"pre_dia_size:%d\n"
+//"me_subpel_quality:%d\n"
+//"me_range:%d\n"
+//"slice_flags:%d\n"
+//"mb_decision:%d\n"
+//"scenechange_threshold:%d\n"
+//"noise_reduction:%d\n"
+//"intra_dc_precision:%d\n"
+//"skip_top:%d\n"
+//"skip_bottom:%d\n"
+//"mb_lmin:%d\n"
+//"mb_lmax:%d\n"
+//"me_penalty_compensation:%d\n"
+//"bidir_refine:%d\n"
+//"brd_scale:%d\n"
+//"keyint_min:%d\n"
+//"refs:%d\n"
+//"chromaoffset:%d\n"
+//"mv0_threshold:%d\n"
+//"b_sensitivity:%d\n"
+//"color_primaries:%d\n"
+//"color_trc:%d\n"
+//"colorspace:%d\n"
+//"color_range:%d\n"
+//"chroma_sample_location:%d\n"
+//"slices:%d\n"
+//"field_order:%d\n"
+//"sample_rate:%d\n"
+//"channels:%d\n"
+//"sample_fmt:%d\n"
+//"frame_size:%d\n"
+//"frame_number:%d\n"
+//"block_align:%d\n"
+//"cutoff:%d\n"
+//"channel_layout:%lld\n"
+//"request_channel_layout:%lld\n"
+//"audio_service_type:%d\n"
+//"request_sample_fmt:%d\n"
+//"refcounted_frames:%d\n"
+//"qcompress:%g\n"
+//"qblur:%g\n"
+//"qmin:%d\n"
+//"qmax:%d\n"
+//"max_qdiff:%d\n"
+//"rc_buffer_size:%d\n"
+//"rc_override_count:%d\n"
+//"rc_max_rate:%d\n"
+//"rc_min_rate:%d\n"
+//"rc_max_available_vbv_use:%g\n"
+//"rc_min_vbv_overflow_use:%g\n"
+//"rc_initial_buffer_occupancy:%d\n"
+//"coder_type:%d\n"
+//"context_model:%d\n"
+//"frame_skip_threshold:%d\n"
+//"frame_skip_factor:%d\n"
+//"frame_skip_exp:%d\n"
+//"frame_skip_cmp:%d\n"
+//"trellis:%d\n"
+//"min_prediction_order:%d\n"
+//"max_prediction_order:%d\n"
+//"timecode_frame_start:%lld\n"
+//"rtp_payload_size:%d\n"
+//"mv_bits:%d\n"
+//"header_bits:%d\n"
+//"i_tex_bits:%d\n"
+//"p_tex_bits:%d\n"
+//"i_count:%d\n"
+//"p_count:%d\n"
+//"skip_count:%d\n"
+//"misc_bits:%d\n"
+//"frame_bits:%d\n"
+//"workaround_bugs:%d\n"
+//"strict_std_compliance:%d\n"
+//"error_concealment:%d\n"
+//"debug:%d\n"
+//"debug_mv:%d\n"
+//"err_recognition:%d\n"
+//"reordered_opaque:%lld\n"
+//"dct_algo:%d\n"
+//"idct_algo:%d\n"
+//"bits_per_coded_sample:%d\n"
+//"bits_per_raw_sample:%d\n"
+//"lowres:%d\n"
+//"thread_count:%d\n"
+//"thread_type:%d\n"
+//"active_thread_type:%d\n"
+//"thread_safe_callbacks:%d\n"
+//"nsse_weight:%d\n"
+//"profile:%d\n"
+//"level:%d\n"
+//"skip_loop_filter:%d\n"
+//"skip_idct:%d\n"
+//"skip_frame:%d\n"
+//"subtitle_header_size:%d\n"
+//"vbv_delay:%lld\n"
+//"side_data_only_packets:%d\n"
+//"initial_padding:%d\n"
+//"framerate:%d/%d\n"
+//"sw_pix_fmt:%d\n"
+//"pkt_timebase:%d/%d\n"
+//"pts_correction_num_faulty_pts:%lld\n"
+//"pts_correction_num_faulty_dts:%lld\n"
+//"pts_correction_last_pts:%lld\n"
+//"pts_correction_last_dts:%lld\n"
+//"sub_charenc_mode:%d\n"
+//"skip_alpha:%d\n"
+//"seek_preroll:%d\n"
+//"===== END =====\n",
+//avctx->bit_rate,
+//avctx->bit_rate_tolerance,
+//avctx->global_quality,
+//avctx->compression_level,
+//avctx->flags,
+//avctx->flags2,
+//avctx->extradata_size,
+//avctx->time_base.num, avctx->time_base.den,
+//avctx->ticks_per_frame,
+//avctx->delay,
+//avctx->width,
+//avctx->height,
+//avctx->coded_width,
+//avctx->coded_height,
+//avctx->gop_size,
+//avctx->pix_fmt,
+//avctx->max_b_frames,
+//avctx->b_quant_factor,
+//avctx->b_frame_strategy,
+//avctx->b_quant_offset,
+//avctx->has_b_frames,
+//avctx->mpeg_quant,
+//avctx->i_quant_factor,
+//avctx->i_quant_offset,
+//avctx->lumi_masking,
+//avctx->temporal_cplx_masking,
+//avctx->spatial_cplx_masking,
+//avctx->p_masking,
+//avctx->dark_masking,
+//avctx->slice_count,
+//avctx->prediction_method,
+//avctx->sample_aspect_ratio.num, avctx->sample_aspect_ratio.den,
+//avctx->me_cmp,
+//avctx->me_sub_cmp,
+//avctx->mb_cmp,
+//avctx->ildct_cmp,
+//avctx->dia_size,
+//avctx->last_predictor_count,
+//avctx->pre_me,
+//avctx->me_pre_cmp,
+//avctx->pre_dia_size,
+//avctx->me_subpel_quality,
+//avctx->me_range,
+//avctx->slice_flags,
+//avctx->mb_decision,
+//avctx->scenechange_threshold,
+//avctx->noise_reduction,
+//avctx->intra_dc_precision,
+//avctx->skip_top,
+//avctx->skip_bottom,
+//avctx->mb_lmin,
+//avctx->mb_lmax,
+//avctx->me_penalty_compensation,
+//avctx->bidir_refine,
+//avctx->brd_scale,
+//avctx->keyint_min,
+//avctx->refs,
+//avctx->chromaoffset,
+//avctx->mv0_threshold,
+//avctx->b_sensitivity,
+//avctx->color_primaries,
+//avctx->color_trc,
+//avctx->colorspace,
+//avctx->color_range,
+//avctx->chroma_sample_location,
+//avctx->slices,
+//avctx->field_order,
+//avctx->sample_rate,
+//avctx->channels,
+//avctx->sample_fmt,
+//avctx->frame_size,
+//avctx->frame_number,
+//avctx->block_align,
+//avctx->cutoff,
+//avctx->channel_layout,
+//avctx->request_channel_layout,
+//avctx->audio_service_type,
+//avctx->request_sample_fmt,
+//avctx->refcounted_frames,
+//avctx->qcompress,
+//avctx->qblur,
+//avctx->qmin,
+//avctx->qmax,
+//avctx->max_qdiff,
+//avctx->rc_buffer_size,
+//avctx->rc_override_count,
+//avctx->rc_max_rate,
+//avctx->rc_min_rate,
+//avctx->rc_max_available_vbv_use,
+//avctx->rc_min_vbv_overflow_use,
+//avctx->rc_initial_buffer_occupancy,
+//avctx->coder_type,
+//avctx->context_model,
+//avctx->frame_skip_threshold,
+//avctx->frame_skip_factor,
+//avctx->frame_skip_exp,
+//avctx->frame_skip_cmp,
+//avctx->trellis,
+//avctx->min_prediction_order,
+//avctx->max_prediction_order,
+//avctx->timecode_frame_start,
+//avctx->rtp_payload_size,
+//avctx->mv_bits,
+//avctx->header_bits,
+//avctx->i_tex_bits,
+//avctx->p_tex_bits,
+//avctx->i_count,
+//avctx->p_count,
+//avctx->skip_count,
+//avctx->misc_bits,
+//avctx->frame_bits,
+//avctx->workaround_bugs,
+//avctx->strict_std_compliance,
+//avctx->error_concealment,
+//avctx->debug,
+//avctx->debug_mv,
+//avctx->err_recognition,
+//avctx->reordered_opaque,
+//avctx->dct_algo,
+//avctx->idct_algo,
+//avctx->bits_per_coded_sample,
+//avctx->bits_per_raw_sample,
+//avctx->lowres,
+//avctx->thread_count,
+//avctx->thread_type,
+//avctx->active_thread_type,
+//avctx->thread_safe_callbacks,
+//avctx->nsse_weight,
+//avctx->profile,
+//avctx->level,
+//avctx->skip_loop_filter,
+//avctx->skip_idct,
+//avctx->skip_frame,
+//avctx->subtitle_header_size,
+//avctx->vbv_delay,
+//avctx->side_data_only_packets,
+//avctx->initial_padding,
+//avctx->framerate.num, avctx->framerate.den,
+//avctx->sw_pix_fmt,
+//avctx->pkt_timebase.num, avctx->pkt_timebase.den,
+//avctx->pts_correction_num_faulty_pts,
+//avctx->pts_correction_num_faulty_dts,
+//avctx->pts_correction_last_pts,
+//avctx->pts_correction_last_dts,
+//avctx->sub_charenc_mode,
+//avctx->skip_alpha,
+//avctx->seek_preroll
+//);
+
     int ret;
     AVPacket user_pkt = *avpkt;
     int needs_realloc = !user_pkt.data;
@@ -2279,11 +2599,14 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
         av_free_packet(avpkt);
         av_init_packet(avpkt);
         avpkt->size = 0;
+av_log(NULL, AV_LOG_DEBUG, "[OUT] libavcodec/utils.c > avcodec_encode_video2 (no frame)\n");
         return 0;
     }
 
-    if (av_image_check_size(avctx->width, avctx->height, 0, avctx))
+    if (av_image_check_size(avctx->width, avctx->height, 0, avctx)) {
+av_log(NULL, AV_LOG_DEBUG, "[OUT] libavcodec/utils.c > avcodec_encode_video2 (error1)\n");
         return AVERROR(EINVAL);
+    }
 
     if (frame && frame->format == AV_PIX_FMT_NONE)
         av_log(avctx, AV_LOG_WARNING, "AVFrame.format is not set\n");
@@ -2368,6 +2691,8 @@ frame->decode_error_flags,
 frame->channels,
 frame->pkt_size
 );
+} else {
+av_log(NULL, AV_LOG_DEBUG, "===== Video encode Frame =====\nNULL\n===== End =====\n");
 }
 
     ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
@@ -2412,6 +2737,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         avctx->frame_number++;
     }
 
+    if (frame) {
+        av_log(NULL, AV_LOG_DEBUG, "[CONNECT] frame.pkt_pos:%lld = packet.pts(dts):%lld(%lld)\n", frame->pkt_pos, avpkt->pts, avpkt->dts);
+    } else {
+        av_log(NULL, AV_LOG_DEBUG, "[CONNECT] frame:NULL = packet.pts(dts):%lld(%lld)\n", avpkt->pts, avpkt->dts);
+    }
+
     av_log(NULL, AV_LOG_DEBUG, "===== Video Encoded Packet =====\n"
         "pts:%lld\n"
         "dts:%lld\n"
@@ -2438,6 +2769,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_free_packet(avpkt);
 
     emms_c();
+av_log(NULL, AV_LOG_DEBUG, "[OUT] libavcodec/utils.c > avcodec_encode_video2\n");
     return ret;
 }
 

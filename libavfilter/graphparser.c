@@ -164,6 +164,7 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
 static int parse_filter(AVFilterContext **filt_ctx, const char **buf, AVFilterGraph *graph,
                         int index, void *log_ctx)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] graphparser.c > parse_filter\n");
     char *opts = NULL;
     char *name = av_get_token(buf, "=,;[\n");
     int ret;
@@ -176,6 +177,7 @@ static int parse_filter(AVFilterContext **filt_ctx, const char **buf, AVFilterGr
     ret = create_filter(filt_ctx, graph, index, name, opts, log_ctx);
     av_free(name);
     av_free(opts);
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > parse_filter\n");
     return ret;
 }
 
@@ -233,6 +235,7 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
                               AVFilterInOut **curr_inputs,
                               AVFilterInOut **open_inputs, void *log_ctx)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] graphparser.c > link_filter_inouts\n");
     int pad, ret;
 
     for (pad = 0; pad < filt_ctx->nb_inputs; pad++) {
@@ -241,15 +244,19 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
         if (p) {
             *curr_inputs = (*curr_inputs)->next;
             p->next = NULL;
-        } else if (!(p = av_mallocz(sizeof(*p))))
+        } else if (!(p = av_mallocz(sizeof(*p)))) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > link_filter_inouts (error1)\n");
             return AVERROR(ENOMEM);
+        }
 
         if (p->filter_ctx) {
             ret = link_filter(p->filter_ctx, p->pad_idx, filt_ctx, pad, log_ctx);
             av_freep(&p->name);
             av_freep(&p);
-            if (ret < 0)
+            if (ret < 0) {
+                av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > link_filter_inouts (error2)\n");
                 return ret;
+            }
         } else {
             p->filter_ctx = filt_ctx;
             p->pad_idx = pad;
@@ -261,25 +268,30 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
         av_log(log_ctx, AV_LOG_ERROR,
                "Too many inputs specified for the \"%s\" filter.\n",
                filt_ctx->filter->name);
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > link_filter_inouts (error3)\n");
         return AVERROR(EINVAL);
     }
 
     pad = filt_ctx->nb_outputs;
     while (pad--) {
         AVFilterInOut *currlinkn = av_mallocz(sizeof(AVFilterInOut));
-        if (!currlinkn)
+        if (!currlinkn) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > link_filter_inouts (error4)\n");
             return AVERROR(ENOMEM);
+        }
         currlinkn->filter_ctx  = filt_ctx;
         currlinkn->pad_idx = pad;
         insert_inout(curr_inputs, currlinkn);
     }
 
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > link_filter_inouts\n");
     return 0;
 }
 
 static int parse_inputs(const char **buf, AVFilterInOut **curr_inputs,
                         AVFilterInOut **open_outputs, void *log_ctx)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] graphparser.c > parse_inputs\n");
     AVFilterInOut *parsed_inputs = NULL;
     int pad = 0;
 
@@ -287,8 +299,10 @@ static int parse_inputs(const char **buf, AVFilterInOut **curr_inputs,
         char *name = parse_link_name(buf, log_ctx);
         AVFilterInOut *match;
 
-        if (!name)
+        if (!name) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > parse_inputs (error1)\n");
             return AVERROR(EINVAL);
+        }
 
         /* First check if the label is not in the open_outputs list */
         match = extract_inout(name, open_outputs);
@@ -314,6 +328,7 @@ static int parse_inputs(const char **buf, AVFilterInOut **curr_inputs,
     append_inout(&parsed_inputs, curr_inputs);
     *curr_inputs = parsed_inputs;
 
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > parse_inputs\n");
     return pad;
 }
 
@@ -321,6 +336,7 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
                          AVFilterInOut **open_inputs,
                          AVFilterInOut **open_outputs, void *log_ctx)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] graphparser.c > parse_outputs\n");
     int ret, pad = 0;
 
     while (**buf == '[') {
@@ -329,13 +345,16 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
 
         AVFilterInOut *input = *curr_inputs;
 
-        if (!name)
+        if (!name) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > parse_outputs (error1)\n");
             return AVERROR(EINVAL);
+        }
 
         if (!input) {
             av_log(log_ctx, AV_LOG_ERROR,
                    "No output pad can be associated to link label '%s'.\n", name);
             av_free(name);
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > parse_outputs (error2)\n");
             return AVERROR(EINVAL);
         }
         *curr_inputs = (*curr_inputs)->next;
@@ -347,6 +366,7 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
             if ((ret = link_filter(input->filter_ctx, input->pad_idx,
                                    match->filter_ctx, match->pad_idx, log_ctx)) < 0) {
                 av_free(name);
+                av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > parse_outputs (error3)\n");
                 return ret;
             }
             av_freep(&match->name);
@@ -362,29 +382,37 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
         pad++;
     }
 
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > parse_outputs\n");
     return pad;
 }
 
 static int parse_sws_flags(const char **buf, AVFilterGraph *graph)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] graphparser.c > parse_sws_flags\n");
     char *p = strchr(*buf, ';');
 
-    if (strncmp(*buf, "sws_flags=", 10))
+    if (strncmp(*buf, "sws_flags=", 10)) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > parse_sws_flags (success1)\n");
         return 0;
+    }
 
     if (!p) {
         av_log(graph, AV_LOG_ERROR, "sws_flags not terminated with ';'.\n");
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > parse_sws_flags (error1)\n");
         return AVERROR(EINVAL);
     }
 
     *buf += 4;  // keep the 'flags=' part
 
     av_freep(&graph->scale_sws_opts);
-    if (!(graph->scale_sws_opts = av_mallocz(p - *buf + 1)))
+    if (!(graph->scale_sws_opts = av_mallocz(p - *buf + 1))) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > parse_sws_flags (error2)\n");
         return AVERROR(ENOMEM);
+    }
     av_strlcpy(graph->scale_sws_opts, *buf, p - *buf + 1);
 
     *buf = p + 1;
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > parse_sws_flags (success2)\n");
     return 0;
 }
 
@@ -392,6 +420,7 @@ int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
                           AVFilterInOut **inputs,
                           AVFilterInOut **outputs)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] graphparser.c > avfilter_graph_parse2\n");
     int index = 0, ret = 0;
     char chr = 0;
 
@@ -440,6 +469,7 @@ int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
 
     *inputs  = open_inputs;
     *outputs = open_outputs;
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > avfilter_graph_parse2\n");
     return 0;
 
  fail:end:
@@ -453,6 +483,7 @@ int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
     *inputs  = NULL;
     *outputs = NULL;
 
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] graphparser.c > avfilter_graph_parse2 (error1)\n");
     return ret;
 }
 

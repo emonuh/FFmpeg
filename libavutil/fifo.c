@@ -122,9 +122,11 @@ int av_fifo_grow(AVFifoBuffer *f, unsigned int size)
 int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size,
                           int (*func)(void *, void *, int))
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN] libavutil/fifo.c > av_fifo_generic_write\n");
     int total = size;
     uint32_t wndx= f->wndx;
     uint8_t *wptr= f->wptr;
+    av_log(NULL, AV_LOG_DEBUG, "[VALUE] wndx(before):%d\n", wndx);
 
     do {
         int len = FFMIN(f->end - wptr, size);
@@ -145,6 +147,8 @@ int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size,
     } while (size > 0);
     f->wndx= wndx;
     f->wptr= wptr;
+    av_log(NULL, AV_LOG_DEBUG, "[VALUE] wndx(after):%d\n", wndx);
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] libavutil/fifo.c > av_fifo_generic_write\n");
     return total - size;
 }
 
