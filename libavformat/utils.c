@@ -1565,6 +1565,29 @@ return_packet:
     if (is_relative(pkt->pts))
         pkt->pts -= RELATIVE_TS_BASE;
 
+    if (ret >= 0) {
+        av_log(NULL, AV_LOG_DEBUG, "===== Read Packet =====\n"
+            "pts:%lld\n"
+            "dts:%lld\n"
+            "size:%d\n"
+            "stream_index:%d\n"
+            "flags:%d\n"
+            "side_data_elems:%d\n"
+            "duration:%d\n"
+            "pos:%lld\n"
+            "convergence_duration:%lld\n"
+            "========== End ==========\n",
+            pkt->pts,
+            pkt->dts,
+            pkt->size,
+            pkt->stream_index,
+            pkt->flags,
+            pkt->side_data_elems,
+            pkt->duration,
+            pkt->pos,
+            pkt->convergence_duration
+        );
+    }
     return ret;
 }
 

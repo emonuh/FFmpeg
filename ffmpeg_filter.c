@@ -1053,6 +1053,9 @@ int configure_filtergraph(FilterGraph *fg)
                                          ost->enc_ctx->frame_size);
     }
 
+    char *dump = avfilter_graph_dump(fg->graph, NULL);
+    av_log(NULL, AV_LOG_DEBUG, dump);
+
     return 0;
 }
 

@@ -1957,6 +1957,86 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
 
     av_assert0(avctx->codec->encode2);
 
+    if (frame) {
+        av_log(NULL, AV_LOG_DEBUG, "===== Audio encode Frame =====\n"
+        "width:%d\n"
+        "height:%d\n"
+        "nb_samples:%d\n"
+        "format:%d\n"
+        "key_frame:%d\n"
+        "pict_type:%d\n"
+        "sample_aspect_ratio:%d/%d\n"
+        "pts:%lld\n"
+        "pkt_pts:%lld\n"
+        "pkt_dts:%lld\n"
+        "coded_picture_number:%d\n"
+        "display_picture_number:%d\n"
+        "quality:%d\n"
+        "error:%lld\n"
+        "repeat_pict:%d\n"
+        "interlaced_frame:%d\n"
+        "top_field_first:%d\n"
+        "palette_has_changed:%d\n"
+        "reordered_opaque:%lld\n"
+        "motion_subsample_log2:%d\n"
+        "sample_rate:%d\n"
+        "channel_layout:%lld\n"
+        "nb_extended_buf:%d\n"
+        "nb_side_data:%d\n"
+        "flags:%d\n"
+        "color_range:%d\n"
+        "color_primaries:%d\n"
+        "color_trc:%d\n"
+        "colorspace:%d\n"
+        "chroma_location:%d\n"
+        "best_effort_timestamp:%lld\n"
+        "pkt_pos:%lld\n"
+        "pkt_duration:%lld\n"
+        "decode_error_flags:%d\n"
+        "channels:%d\n"
+        "pkt_size:%d\n"
+        "========== End ==========\n",
+        frame->width,
+        frame->height,
+        frame->nb_samples,
+        frame->format,
+        frame->key_frame,
+        frame->pict_type,
+        frame->sample_aspect_ratio.num, frame->sample_aspect_ratio.den,
+        frame->pts,
+        frame->pkt_pts,
+        frame->pkt_dts,
+        frame->coded_picture_number,
+        frame->display_picture_number,
+        frame->quality,
+        frame->error[0],
+        frame->repeat_pict,
+        frame->interlaced_frame,
+        frame->top_field_first,
+        frame->palette_has_changed,
+        frame->reordered_opaque,
+        frame->motion_subsample_log2,
+        frame->sample_rate,
+        frame->channel_layout,
+        frame->nb_extended_buf,
+        frame->nb_side_data,
+        frame->flags,
+        frame->color_range,
+        frame->color_primaries,
+        frame->color_trc,
+        frame->colorspace,
+        frame->chroma_location,
+        frame->best_effort_timestamp,
+        frame->pkt_pos,
+        frame->pkt_duration,
+        frame->decode_error_flags,
+        frame->channels,
+        frame->pkt_size
+        );
+    } else {
+        av_log(NULL, AV_LOG_DEBUG, "===== Audio encode Frame =====\nNULL\n========== End ==========\n");
+    }
+
     ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
     if (!ret) {
         if (*got_packet_ptr) {
@@ -2005,6 +2085,28 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         avctx->frame_number++;
     }
+
+    av_log(NULL, AV_LOG_DEBUG, "===== Audio Encoded Packet =====\n"
+        "pts:%lld\n"
+        "dts:%lld\n"
+        "size:%d\n"
+        "stream_index:%d\n"
+        "flags:%d\n"
+        "side_data_elems:%d\n"
+        "duration:%d\n"
+        "pos:%lld\n"
+        "convergence_duration:%lld\n"
+        "========== End ==========\n",
+        avpkt->pts,
+        avpkt->dts,
+        avpkt->size,
+        avpkt->stream_index,
+        avpkt->flags,
+        avpkt->side_data_elems,
+        avpkt->duration,
+        avpkt->pos,
+        avpkt->convergence_duration
+    );
 
     if (ret < 0 || !*got_packet_ptr) {
         av_free_packet(avpkt);
@@ -2194,6 +2296,86 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
 
     av_assert0(avctx->codec->encode2);
 
+    if (frame) {
+        av_log(NULL, AV_LOG_DEBUG, "===== Video encode Frame =====\n"
+        "width:%d\n"
+        "height:%d\n"
+        "nb_samples:%d\n"
+        "format:%d\n"
+        "key_frame:%d\n"
+        "pict_type:%d\n"
+        "sample_aspect_ratio:%d/%d\n"
+        "pts:%lld\n"
+        "pkt_pts:%lld\n"
+        "pkt_dts:%lld\n"
+        "coded_picture_number:%d\n"
+        "display_picture_number:%d\n"
+        "quality:%d\n"
+        "error:%lld\n"
+        "repeat_pict:%d\n"
+        "interlaced_frame:%d\n"
+        "top_field_first:%d\n"
+        "palette_has_changed:%d\n"
+        "reordered_opaque:%lld\n"
+        "motion_subsample_log2:%d\n"
+        "sample_rate:%d\n"
+        "channel_layout:%lld\n"
+        "nb_extended_buf:%d\n"
+        "nb_side_data:%d\n"
+        "flags:%d\n"
+        "color_range:%d\n"
+        "color_primaries:%d\n"
+        "color_trc:%d\n"
+        "colorspace:%d\n"
+        "chroma_location:%d\n"
+        "best_effort_timestamp:%lld\n"
+        "pkt_pos:%lld\n"
+        "pkt_duration:%lld\n"
+        "decode_error_flags:%d\n"
+        "channels:%d\n"
+        "pkt_size:%d\n"
+        "========== End ==========\n",
+        frame->width,
+        frame->height,
+        frame->nb_samples,
+        frame->format,
+        frame->key_frame,
+        frame->pict_type,
+        frame->sample_aspect_ratio.num, frame->sample_aspect_ratio.den,
+        frame->pts,
+        frame->pkt_pts,
+        frame->pkt_dts,
+        frame->coded_picture_number,
+        frame->display_picture_number,
+        frame->quality,
+        frame->error[0],
+        frame->repeat_pict,
+        frame->interlaced_frame,
+        frame->top_field_first,
+        frame->palette_has_changed,
+        frame->reordered_opaque,
+        frame->motion_subsample_log2,
+        frame->sample_rate,
+        frame->channel_layout,
+        frame->nb_extended_buf,
+        frame->nb_side_data,
+        frame->flags,
+        frame->color_range,
+        frame->color_primaries,
+        frame->color_trc,
+        frame->colorspace,
+        frame->chroma_location,
+        frame->best_effort_timestamp,
+        frame->pkt_pos,
+        frame->pkt_duration,
+        frame->decode_error_flags,
+        frame->channels,
+        frame->pkt_size
+        );
+    } else {
+        av_log(NULL, AV_LOG_DEBUG, "===== Video encode Frame =====\nNULL\n========== End ==========\n");
+    }
+
     ret = avctx->codec->encode2(avctx, avpkt, frame, got_packet_ptr);
     av_assert0(ret <= 0);
 
@@ -2235,6 +2417,28 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         avctx->frame_number++;
     }
+
+    av_log(NULL, AV_LOG_DEBUG, "===== Video Encoded Packet =====\n"
+        "pts:%lld\n"
+        "dts:%lld\n"
+        "size:%d\n"
+        "stream_index:%d\n"
+        "flags:%d\n"
+        "side_data_elems:%d\n"
+        "duration:%d\n"
+        "pos:%lld\n"
+        "convergence_duration:%lld\n"
+        "========== End ==========\n",
+        avpkt->pts,
+        avpkt->dts,
+        avpkt->size,
+        avpkt->stream_index,
+        avpkt->flags,
+        avpkt->side_data_elems,
+        avpkt->duration,
+        avpkt->pos,
+        avpkt->convergence_duration
+    );
 
     if (ret < 0 || !*got_packet_ptr)
         av_free_packet(avpkt);
@@ -2411,6 +2615,29 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
                                               int *got_picture_ptr,
                                               const AVPacket *avpkt)
 {
+
+    av_log(NULL, AV_LOG_DEBUG, "===== Video Decode Packet =====\n"
+        "pts:%lld\n"
+        "dts:%lld\n"
+        "size:%d\n"
+        "stream_index:%d\n"
+        "flags:%d\n"
+        "side_data_elems:%d\n"
+        "duration:%d\n"
+        "pos:%lld\n"
+        "convergence_duration:%lld\n"
+        "========== End ==========\n",
+        avpkt->pts,
+        avpkt->dts,
+        avpkt->size,
+        avpkt->stream_index,
+        avpkt->flags,
+        avpkt->side_data_elems,
+        avpkt->duration,
+        avpkt->pos,
+        avpkt->convergence_duration
+    );
+
     AVCodecInternal *avci = avctx->internal;
     int ret;
     // copy to ensure we do not change avpkt
@@ -2497,6 +2724,82 @@ fail:
         avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
 #endif
 
+    av_log(NULL, AV_LOG_DEBUG, "===== Video Decoded Frame =====\n"
+        "width:%d\n"
+        "height:%d\n"
+        "nb_samples:%d\n"
+        "format:%d\n"
+        "key_frame:%d\n"
+        "pict_type:%d\n"
+        "sample_aspect_ratio:%d/%d\n"
+        "pts:%lld\n"
+        "pkt_pts:%lld\n"
+        "pkt_dts:%lld\n"
+        "coded_picture_number:%d\n"
+        "display_picture_number:%d\n"
+        "quality:%d\n"
+        "error:%lld\n"
+        "repeat_pict:%d\n"
+        "interlaced_frame:%d\n"
+        "top_field_first:%d\n"
+        "palette_has_changed:%d\n"
+        "reordered_opaque:%lld\n"
+        "motion_subsample_log2:%d\n"
+        "sample_rate:%d\n"
+        "channel_layout:%lld\n"
+        "nb_extended_buf:%d\n"
+        "nb_side_data:%d\n"
+        "flags:%d\n"
+        "color_range:%d\n"
+        "color_primaries:%d\n"
+        "color_trc:%d\n"
+        "colorspace:%d\n"
+        "chroma_location:%d\n"
+        "best_effort_timestamp:%lld\n"
+        "pkt_pos:%lld\n"
+        "pkt_duration:%lld\n"
+        "decode_error_flags:%d\n"
+        "channels:%d\n"
+        "pkt_size:%d\n"
+        "========== End ==========\n",
+        picture->width,
+        picture->height,
+        picture->nb_samples,
+        picture->format,
+        picture->key_frame,
+        picture->pict_type,
+        picture->sample_aspect_ratio.num, picture->sample_aspect_ratio.den,
+        picture->pts,
+        picture->pkt_pts,
+        picture->pkt_dts,
+        picture->coded_picture_number,
+        picture->display_picture_number,
+        picture->quality,
+        picture->error[0],
+        picture->repeat_pict,
+        picture->interlaced_frame,
+        picture->top_field_first,
+        picture->palette_has_changed,
+        picture->reordered_opaque,
+        picture->motion_subsample_log2,
+        picture->sample_rate,
+        picture->channel_layout,
+        picture->nb_extended_buf,
+        picture->nb_side_data,
+        picture->flags,
+        picture->color_range,
+        picture->color_primaries,
+        picture->color_trc,
+        picture->colorspace,
+        picture->chroma_location,
+        picture->best_effort_timestamp,
+        picture->pkt_pos,
+        picture->pkt_duration,
+        picture->decode_error_flags,
+        picture->channels,
+        picture->pkt_size
+    );
+
     return ret;
 }
 
@@ -2562,6 +2865,28 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                                               int *got_frame_ptr,
                                               const AVPacket *avpkt)
 {
+    av_log(NULL, AV_LOG_DEBUG, "===== Audio Decode Packet =====\n"
+        "pts:%lld\n"
+        "dts:%lld\n"
+        "size:%d\n"
+        "stream_index:%d\n"
+        "flags:%d\n"
+        "side_data_elems:%d\n"
+        "duration:%d\n"
+        "pos:%lld\n"
+        "convergence_duration:%lld\n"
+        "========== End ==========\n",
+        avpkt->pts,
+        avpkt->dts,
+        avpkt->size,
+        avpkt->stream_index,
+        avpkt->flags,
+        avpkt->side_data_elems,
+        avpkt->duration,
+        avpkt->pos,
+        avpkt->convergence_duration
+    );
+
     AVCodecInternal *avci = avctx->internal;
     int ret = 0;
 
@@ -2689,6 +3014,83 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 avctx->internal->skip_samples = 0;
             }
         }
+
+    av_log(NULL, AV_LOG_DEBUG, "===== Audio Decoded Frame =====\n"
+        "width:%d\n"
+        "height:%d\n"
+        "nb_samples:%d\n"
+        "format:%d\n"
+        "key_frame:%d\n"
+        "pict_type:%d\n"
+        "sample_aspect_ratio:%d/%d\n"
+        "pts:%lld\n"
+        "pkt_pts:%lld\n"
+        "pkt_dts:%lld\n"
+        "coded_picture_number:%d\n"
+        "display_picture_number:%d\n"
+        "quality:%d\n"
+        "error:%lld\n"
+        "repeat_pict:%d\n"
+        "interlaced_frame:%d\n"
+        "top_field_first:%d\n"
+        "palette_has_changed:%d\n"
+        "reordered_opaque:%lld\n"
+        "motion_subsample_log2:%d\n"
+        "sample_rate:%d\n"
+        "channel_layout:%lld\n"
+        "nb_extended_buf:%d\n"
+        "nb_side_data:%d\n"
+        "flags:%d\n"
+        "color_range:%d\n"
+        "color_primaries:%d\n"
+        "color_trc:%d\n"
+        "colorspace:%d\n"
+        "chroma_location:%d\n"
+        "best_effort_timestamp:%lld\n"
+        "pkt_pos:%lld\n"
+        "pkt_duration:%lld\n"
+        "decode_error_flags:%d\n"
+        "channels:%d\n"
+        "pkt_size:%d\n"
+        "========== End ==========\n",
+        frame->width,
+        frame->height,
+        frame->nb_samples,
+        frame->format,
+        frame->key_frame,
+        frame->pict_type,
+        frame->sample_aspect_ratio.num, frame->sample_aspect_ratio.den,
+        frame->pts,
+        frame->pkt_pts,
+        frame->pkt_dts,
+        frame->coded_picture_number,
+        frame->display_picture_number,
+        frame->quality,
+        frame->error[0],
+        frame->repeat_pict,
+        frame->interlaced_frame,
+        frame->top_field_first,
+        frame->palette_has_changed,
+        frame->reordered_opaque,
+        frame->motion_subsample_log2,
+        frame->sample_rate,
+        frame->channel_layout,
+        frame->nb_extended_buf,
+        frame->nb_side_data,
+        frame->flags,
+        frame->color_range,
+        frame->color_primaries,
+        frame->color_trc,
+        frame->colorspace,
+        frame->chroma_location,
+        frame->best_effort_timestamp,
+        frame->pkt_pos,
+        frame->pkt_duration,
+        frame->decode_error_flags,
+        frame->channels,
+        frame->pkt_size
+    );
+
 fail:
         avctx->internal->pkt = NULL;
         if (did_split) {

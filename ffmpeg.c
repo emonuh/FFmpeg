@@ -635,6 +635,7 @@ static void close_all_output_streams(OutputStream *ost, OSTFinished this_stream,
 
 static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > write_frame\n");
     AVBitStreamFilterContext *bsfc = ost->bitstream_filters;
     AVCodecContext          *avctx = ost->encoding_needed ? ost->enc_ctx : ost->st->codec;
     int ret;
@@ -661,6 +662,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     if (!(avctx->codec_type == AVMEDIA_TYPE_VIDEO && avctx->codec)) {
         if (ost->frame_number >= ost->max_frames) {
             av_free_packet(pkt);
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > write_frame (1)\n");
             return;
         }
         ost->frame_number++;
@@ -791,10 +793,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         close_all_output_streams(ost, MUXER_FINISHED | ENCODER_FINISHED, ENCODER_FINISHED);
     }
     av_free_packet(pkt);
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > write_frame (2)\n");
 }
 
 static void close_output_stream(OutputStream *ost)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > close_output_stream\n");
     OutputFile *of = output_files[ost->file_index];
 
     ost->finished |= ENCODER_FINISHED;
@@ -802,24 +806,29 @@ static void close_output_stream(OutputStream *ost)
         int64_t end = av_rescale_q(ost->sync_opts - ost->first_pts, ost->enc_ctx->time_base, AV_TIME_BASE_Q);
         of->recording_time = FFMIN(of->recording_time, end);
     }
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > close_output_stream\n");
 }
 
 static int check_recording_time(OutputStream *ost)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > check_recording_time\n");
     OutputFile *of = output_files[ost->file_index];
 
     if (of->recording_time != INT64_MAX &&
         av_compare_ts(ost->sync_opts - ost->first_pts, ost->enc_ctx->time_base, of->recording_time,
                       AV_TIME_BASE_Q) >= 0) {
         close_output_stream(ost);
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > check_recording_time (1)\n");
         return 0;
     }
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > check_recording_time (2)\n");
     return 1;
 }
 
 static void do_audio_out(AVFormatContext *s, OutputStream *ost,
                          AVFrame *frame)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > do_audio_out\n");
     AVCodecContext *enc = ost->enc_ctx;
     AVPacket pkt;
     int got_packet = 0;
@@ -828,8 +837,10 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     pkt.data = NULL;
     pkt.size = 0;
 
-    if (!check_recording_time(ost))
+    if (!check_recording_time(ost)) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > do_audio_out (1)\n");
         return;
+    }
 
     if (frame->pts == AV_NOPTS_VALUE || audio_sync_method < 0)
         frame->pts = ost->sync_opts;
@@ -864,6 +875,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
 
         write_frame(s, &pkt, ost);
     }
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > do_audio_out (2)\n");
 }
 
 static void do_subtitle_out(AVFormatContext *s,
@@ -955,6 +967,7 @@ static void do_video_out(AVFormatContext *s,
                          AVFrame *next_picture,
                          double sync_ipts)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > do_video_out\n");
     int ret, format_video_sync;
     AVPacket pkt;
     AVCodecContext *enc = ost->enc_ctx;
@@ -1081,6 +1094,7 @@ static void do_video_out(AVFormatContext *s,
         if (nb_frames > dts_error_threshold * 30) {
             av_log(NULL, AV_LOG_ERROR, "%d frame duplication too large, skipping\n", nb_frames - 1);
             nb_frames_drop++;
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > do_video_out (1)\n");
             return;
         }
         nb_frames_dup += nb_frames - (nb0_frames && ost->last_droped) - (nb_frames > nb0_frames);
@@ -1100,17 +1114,24 @@ static void do_video_out(AVFormatContext *s,
     } else
         in_picture = next_picture;
 
-    if (!in_picture)
+    if (!in_picture) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > do_video_out (2)\n");
         return;
+    }
 
     in_picture->pts = ost->sync_opts;
 
 #if 1
-    if (!check_recording_time(ost))
-#else
-    if (ost->frame_number >= ost->max_frames)
-#endif
+    if (!check_recording_time(ost)) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > do_video_out (3)\n");
         return;
+    }
+#else
+    if (ost->frame_number >= ost->max_frames) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > do_video_out (4)\n");
+        return;
+    }
+#endif
 
     if (s->oformat->flags & AVFMT_RAWPICTURE &&
         enc->codec->id == AV_CODEC_ID_RAWVIDEO) {
@@ -1250,6 +1271,8 @@ static void do_video_out(AVFormatContext *s,
         av_frame_ref(ost->last_frame, next_picture);
     else
         av_frame_free(&ost->last_frame);
+
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > do_video_out (5)\n");
 }
 
 static double psnr(double d)
@@ -1316,6 +1339,7 @@ static void finish_output_stream(OutputStream *ost)
  */
 static int reap_filters(int flush)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > reap_filters\n");
     AVFrame *filtered_frame = NULL;
     int i;
 
@@ -1332,6 +1356,7 @@ static int reap_filters(int flush)
         filter = ost->filter->filter;
 
         if (!ost->filtered_frame && !(ost->filtered_frame = av_frame_alloc())) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > reap_filters (1)\n");
             return AVERROR(ENOMEM);
         }
         filtered_frame = ost->filtered_frame;
@@ -1406,6 +1431,7 @@ static int reap_filters(int flush)
         }
     }
 
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > reap_filters (2)\n");
     return 0;
 }
 
@@ -1704,6 +1730,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
 
 static void flush_encoders(void)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > flush_encoders\n");
     int i, ret;
 
     for (i = 0; i < nb_output_streams; i++) {
@@ -1777,6 +1804,7 @@ static void flush_encoders(void)
                 break;
         }
     }
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > flush_encoders (1)\n");
 }
 
 /*
@@ -1801,6 +1829,7 @@ static int check_output_constraints(InputStream *ist, OutputStream *ost)
 
 static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *pkt)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > do_streamcopy\n");
     OutputFile *of = output_files[ost->file_index];
     InputFile   *f = input_files [ist->file_index];
     int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
@@ -1812,22 +1841,29 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     av_init_packet(&opkt);
 
     if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) &&
-        !ost->copy_initial_nonkeyframes)
+        !ost->copy_initial_nonkeyframes) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > do_streamcopy (1)\n");
         return;
+    }
 
     if (pkt->pts == AV_NOPTS_VALUE) {
         if (!ost->frame_number && ist->pts < start_time &&
-            !ost->copy_prior_start)
+            !ost->copy_prior_start) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > do_streamcopy (2)\n");
             return;
+        }
     } else {
         if (!ost->frame_number && pkt->pts < ist_tb_start_time &&
-            !ost->copy_prior_start)
+            !ost->copy_prior_start) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > do_streamcopy (3)\n");
             return;
+        }
     }
 
     if (of->recording_time != INT64_MAX &&
         ist->pts >= of->recording_time + start_time) {
         close_output_stream(ost);
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > do_streamcopy (4)\n");
         return;
     }
 
@@ -1837,6 +1873,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
             start_time += f->start_time;
         if (ist->pts >= f->recording_time + start_time) {
             close_output_stream(ost);
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > do_streamcopy (5)\n");
             return;
         }
     }
@@ -1909,6 +1946,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     }
 
     write_frame(of->ctx, &opkt, ost);
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > do_streamcopy (6)\n");
 }
 
 int guess_input_channel_layout(InputStream *ist)
@@ -1933,15 +1971,20 @@ int guess_input_channel_layout(InputStream *ist)
 
 static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > decode_audio\n");
     AVFrame *decoded_frame, *f;
     AVCodecContext *avctx = ist->dec_ctx;
     int i, ret, err = 0, resample_changed;
     AVRational decoded_frame_tb;
 
-    if (!ist->decoded_frame && !(ist->decoded_frame = av_frame_alloc()))
+    if (!ist->decoded_frame && !(ist->decoded_frame = av_frame_alloc())) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > decode_audio (1)\n");
         return AVERROR(ENOMEM);
-    if (!ist->filter_frame && !(ist->filter_frame = av_frame_alloc()))
+    }
+    if (!ist->filter_frame && !(ist->filter_frame = av_frame_alloc())) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > decode_audio (2)\n");
         return AVERROR(ENOMEM);
+    }
     decoded_frame = ist->decoded_frame;
 
     update_benchmark(NULL);
@@ -1959,8 +2002,10 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     if (ret < 0 && exit_on_error)
         exit_program(1);
 
-    if (!*got_output || ret < 0)
+    if (!*got_output || ret < 0) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > decode_audio (3)\n");
         return ret;
+    }
 
     ist->samples_decoded += decoded_frame->nb_samples;
     ist->frames_decoded++;
@@ -2056,20 +2101,26 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 
     av_frame_unref(ist->filter_frame);
     av_frame_unref(decoded_frame);
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > decode_audio (4)\n");
     return err < 0 ? err : ret;
 }
 
 static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > decode_video\n");
     AVFrame *decoded_frame, *f;
     int i, ret = 0, err = 0, resample_changed;
     int64_t best_effort_timestamp;
     AVRational *frame_sample_aspect;
 
-    if (!ist->decoded_frame && !(ist->decoded_frame = av_frame_alloc()))
+    if (!ist->decoded_frame && !(ist->decoded_frame = av_frame_alloc())) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > decode_video (1)\n");
         return AVERROR(ENOMEM);
-    if (!ist->filter_frame && !(ist->filter_frame = av_frame_alloc()))
+    }
+    if (!ist->filter_frame && !(ist->filter_frame = av_frame_alloc())) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > decode_video (2)\n");
         return AVERROR(ENOMEM);
+    }
     decoded_frame = ist->decoded_frame;
     pkt->dts  = av_rescale_q(ist->dts, AV_TIME_BASE_Q, ist->st->time_base);
 
@@ -2113,8 +2164,10 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
         }
     }
 
-    if (!*got_output || ret < 0)
+    if (!*got_output || ret < 0) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > decode_video (3)\n");
         return ret;
+    }
 
     if(ist->top_field_first>=0)
         decoded_frame->top_field_first = ist->top_field_first;
@@ -2123,8 +2176,10 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 
     if (ist->hwaccel_retrieve_data && decoded_frame->format == ist->hwaccel_pix_fmt) {
         err = ist->hwaccel_retrieve_data(ist->dec_ctx, decoded_frame);
-        if (err < 0)
+        if (err < 0) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > decode_video (4)\n");
             goto fail;
+        }
     }
     ist->hwaccel_retrieved_pix_fmt = decoded_frame->format;
 
@@ -2192,6 +2247,8 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
             exit_program(1);
         }
     }
+
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > decode_video (5)\n");
 
 fail:
     av_frame_unref(ist->filter_frame);
@@ -2276,6 +2333,7 @@ static int send_filter_eof(InputStream *ist)
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
 static int process_input_packet(InputStream *ist, const AVPacket *pkt)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > process_input_packet\n");
     int ret = 0, i;
     int got_output = 0;
 
@@ -2354,6 +2412,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
             ret = transcode_subtitles(ist, &avpkt, &got_output);
             break;
         default:
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > process_input_packet (1)\n");
             return -1;
         }
 
@@ -2427,6 +2486,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt)
         do_streamcopy(ist, ost, pkt);
     }
 
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > process_input_packet (2)\n");
     return got_output;
 }
 
@@ -3335,6 +3395,7 @@ static int transcode_init(void)
 /* Return 1 if there remain streams where more output is wanted, 0 otherwise. */
 static int need_output(void)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > need_output\n");
     int i;
 
     for (i = 0; i < nb_output_streams; i++) {
@@ -3352,9 +3413,11 @@ static int need_output(void)
             continue;
         }
 
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > need_output (1)\n");
         return 1;
     }
 
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > need_output (2)\n");
     return 0;
 }
 
@@ -3491,6 +3554,7 @@ static int check_keyboard_interaction(int64_t cur_time)
 #if HAVE_PTHREADS
 static void *input_thread(void *arg)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > input_thread\n");
     InputFile *f = arg;
     unsigned flags = f->non_blocking ? AV_THREAD_MESSAGE_NONBLOCK : 0;
     int ret = 0;
@@ -3528,6 +3592,7 @@ static void *input_thread(void *arg)
         }
     }
 
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > input_thread (1)\n");
     return NULL;
 }
 
@@ -3553,6 +3618,7 @@ static void free_input_threads(void)
 
 static int init_input_threads(void)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > init_input_threads\n");
     int i, ret;
 
     if (nb_input_files == 1)
@@ -3566,15 +3632,19 @@ static int init_input_threads(void)
             f->non_blocking = 1;
         ret = av_thread_message_queue_alloc(&f->in_thread_queue,
                                             f->thread_queue_size, sizeof(AVPacket));
-        if (ret < 0)
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > init_input_threads (1)\n");
             return ret;
+        }
 
         if ((ret = pthread_create(&f->thread, NULL, input_thread, f))) {
             av_log(NULL, AV_LOG_ERROR, "pthread_create failed: %s. Try to increase `ulimit -v` or decrease `ulimit -s`.\n", strerror(ret));
             av_thread_message_queue_free(&f->in_thread_queue);
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > init_input_threads (2)\n");
             return AVERROR(ret);
         }
     }
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > init_input_threads (3)\n");
     return 0;
 }
 
@@ -3588,22 +3658,31 @@ static int get_input_packet_mt(InputFile *f, AVPacket *pkt)
 
 static int get_input_packet(InputFile *f, AVPacket *pkt)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > get_input_packet\n");
     if (f->rate_emu) {
         int i;
         for (i = 0; i < f->nb_streams; i++) {
             InputStream *ist = input_streams[f->ist_index + i];
             int64_t pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
             int64_t now = av_gettime_relative() - ist->start;
-            if (pts > now)
+            if (pts > now) {
+                av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > get_input_packet (1)\n");
                 return AVERROR(EAGAIN);
+            }
         }
     }
 
+    int ret;
 #if HAVE_PTHREADS
-    if (nb_input_files > 1)
-        return get_input_packet_mt(f, pkt);
+    if (nb_input_files > 1) {
+        ret = get_input_packet_mt(f, pkt);
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > get_input_packet (2)\n");
+        return ret;
+    }
 #endif
-    return av_read_frame(f->ctx, pkt);
+    ret = av_read_frame(f->ctx, pkt);
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > get_input_packet (3)\n");
+    return ret;
 }
 
 static int got_eagain(void)
@@ -3633,6 +3712,7 @@ static void reset_eagain(void)
  */
 static int process_input(int file_index)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > process_input\n");
     InputFile *ifile = input_files[file_index];
     AVFormatContext *is;
     InputStream *ist;
@@ -3644,6 +3724,7 @@ static int process_input(int file_index)
 
     if (ret == AVERROR(EAGAIN)) {
         ifile->eagain = 1;
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > process_input (1)\n");
         return ret;
     }
     if (ret < 0) {
@@ -3657,8 +3738,10 @@ static int process_input(int file_index)
             ist = input_streams[ifile->ist_index + i];
             if (ist->decoding_needed) {
                 ret = process_input_packet(ist, NULL);
-                if (ret>0)
+                if (ret>0) {
+                    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > process_input (2)\n");
                     return 0;
+                }
             }
 
             /* mark all outputs that don't go through lavfi as finished */
@@ -3672,6 +3755,7 @@ static int process_input(int file_index)
         }
 
         ifile->eof_reached = 1;
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > process_input (3)\n");
         return AVERROR(EAGAIN);
     }
 
@@ -3685,6 +3769,7 @@ static int process_input(int file_index)
        dynamically in stream : we ignore them */
     if (pkt.stream_index >= ifile->nb_streams) {
         report_new_stream(file_index, &pkt);
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > process_input (4)\n");
         goto discard_packet;
     }
 
@@ -3693,8 +3778,10 @@ static int process_input(int file_index)
     ist->data_size += pkt.size;
     ist->nb_packets++;
 
-    if (ist->discard)
+    if (ist->discard) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > process_input (5)\n");
         goto discard_packet;
+    }
 
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "demuxer -> ist_index:%d type:%s "
@@ -3844,6 +3931,8 @@ static int process_input(int file_index)
 
     process_input_packet(ist, &pkt);
 
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > process_input (6)\n");
+
 discard_packet:
     av_free_packet(&pkt);
 
@@ -3859,6 +3948,7 @@ discard_packet:
  */
 static int transcode_from_filter(FilterGraph *graph, InputStream **best_ist)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > transcode_from_filter\n");
     int i, ret;
     int nb_requests, nb_requests_max = 0;
     InputFilter *ifilter;
@@ -3866,17 +3956,23 @@ static int transcode_from_filter(FilterGraph *graph, InputStream **best_ist)
 
     *best_ist = NULL;
     ret = avfilter_graph_request_oldest(graph->graph);
-    if (ret >= 0)
-        return reap_filters(0);
+    if (ret >= 0) {
+        ret = reap_filters(0);
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > transcode_from_filter (1)\n");
+        return ret;
+    }
 
     if (ret == AVERROR_EOF) {
         ret = reap_filters(1);
         for (i = 0; i < graph->nb_outputs; i++)
             close_output_stream(graph->outputs[i]->ost);
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > transcode_from_filter (2)\n");
         return ret;
     }
-    if (ret != AVERROR(EAGAIN))
+    if (ret != AVERROR(EAGAIN)) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > transcode_from_filter (3)\n");
         return ret;
+    }
 
     for (i = 0; i < graph->nb_inputs; i++) {
         ifilter = graph->inputs[i];
@@ -3895,6 +3991,7 @@ static int transcode_from_filter(FilterGraph *graph, InputStream **best_ist)
         for (i = 0; i < graph->nb_outputs; i++)
             graph->outputs[i]->ost->unavailable = 1;
 
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > transcode_from_filter (4)\n");
     return 0;
 }
 
@@ -3905,6 +4002,7 @@ static int transcode_from_filter(FilterGraph *graph, InputStream **best_ist)
  */
 static int transcode_step(void)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > transcode_step\n");
     OutputStream *ost;
     InputStream  *ist;
     int ret;
@@ -3914,17 +4012,23 @@ static int transcode_step(void)
         if (got_eagain()) {
             reset_eagain();
             av_usleep(10000);
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > transcode_step (1)\n");
             return 0;
         }
         av_log(NULL, AV_LOG_VERBOSE, "No more inputs to read from, finishing.\n");
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > transcode_step (2)\n");
         return AVERROR_EOF;
     }
 
     if (ost->filter) {
-        if ((ret = transcode_from_filter(ost->filter->graph, &ist)) < 0)
+        if ((ret = transcode_from_filter(ost->filter->graph, &ist)) < 0) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > transcode_step (3)\n");
             return ret;
-        if (!ist)
+        }
+        if (!ist) {
+            av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > transcode_step (4)\n");
             return 0;
+        }
     } else {
         av_assert0(ost->source_index >= 0);
         ist = input_streams[ost->source_index];
@@ -3934,13 +4038,18 @@ static int transcode_step(void)
     if (ret == AVERROR(EAGAIN)) {
         if (input_files[ist->file_index]->eagain)
             ost->unavailable = 1;
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > transcode_step (5)\n");
         return 0;
     }
 
-    if (ret < 0)
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > transcode_step (6)\n");
         return ret == AVERROR_EOF ? 0 : ret;
+    }
 
-    return reap_filters(0);
+    ret = reap_filters(0);
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > transcode_step (7)\n");
+    return ret;
 }
 
 /*
@@ -3948,6 +4057,7 @@ static int transcode_step(void)
  */
 static int transcode(void)
 {
+    av_log(NULL, AV_LOG_DEBUG, "[IN]  ffmpeg.c > transcode\n");
     int ret, i;
     AVFormatContext *os;
     OutputStream *ost;
@@ -3955,8 +4065,10 @@ static int transcode(void)
     int64_t timer_start;
 
     ret = transcode_init();
-    if (ret < 0)
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > transcode (1)\n");
         goto fail;
+    }
 
     if (stdin_interaction) {
         av_log(NULL, AV_LOG_INFO, "Press [q] to stop, [?] for help\n");
@@ -3965,39 +4077,48 @@ static int transcode(void)
     timer_start = av_gettime_relative();
 
 #if HAVE_PTHREADS
-    if ((ret = init_input_threads()) < 0)
+    if ((ret = init_input_threads()) < 0) {
+        av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > transcode (2)\n");
         goto fail;
+    }
 #endif
 
     while (!received_sigterm) {
+        av_log(NULL, AV_LOG_DEBUG, "[LOOP START] -------------------- transcode steps --------------------\n");
         int64_t cur_time= av_gettime_relative();
 
         /* if 'q' pressed, exits */
         if (stdin_interaction)
-            if (check_keyboard_interaction(cur_time) < 0)
+            if (check_keyboard_interaction(cur_time) < 0) {
+                av_log(NULL, AV_LOG_DEBUG, "[LOOP END 1] -------------------- transcode steps --------------------\n");
                 break;
+            }
 
         /* check if there's any stream where output is still needed */
         if (!need_output()) {
             av_log(NULL, AV_LOG_VERBOSE, "No more output streams to write to, finishing.\n");
+            av_log(NULL, AV_LOG_DEBUG, "[LOOP END 2] -------------------- transcode steps --------------------\n");
             break;
         }
 
         ret = transcode_step();
         if (ret < 0) {
             if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN)) {
+                av_log(NULL, AV_LOG_DEBUG, "[LOOP END 3] -------------------- transcode steps --------------------\n");
                 continue;
             } else {
                 char errbuf[128];
                 av_strerror(ret, errbuf, sizeof(errbuf));
 
                 av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", errbuf);
+                av_log(NULL, AV_LOG_DEBUG, "[LOOP END 4] -------------------- transcode steps --------------------\n");
                 break;
             }
         }
 
         /* dump report by using the output first video and audio streams */
         print_report(0, timer_start, cur_time);
+        av_log(NULL, AV_LOG_DEBUG, "[LOOP END 5] -------------------- transcode steps --------------------\n");
     }
 #if HAVE_PTHREADS
     free_input_threads();
@@ -4042,6 +4163,7 @@ static int transcode(void)
     }
 
     /* finished ! */
+    av_log(NULL, AV_LOG_DEBUG, "[OUT] ffmpeg.c > transcode (3)\n");
     ret = 0;
 
  fail:

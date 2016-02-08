@@ -96,6 +96,86 @@ int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFra
     AVFrame *copy = NULL;
     int ret = 0;
 
+    if (frame) {
+        av_log(NULL, AV_LOG_DEBUG, "===== Add Frame =====\n"
+            "width:%d\n"
+            "height:%d\n"
+            "nb_samples:%d\n"
+            "format:%d\n"
+            "key_frame:%d\n"
+            "pict_type:%d\n"
+            "sample_aspect_ratio:%d/%d\n"
+            "pts:%lld\n"
+            "pkt_pts:%lld\n"
+            "pkt_dts:%lld\n"
+            "coded_picture_number:%d\n"
+            "display_picture_number:%d\n"
+            "quality:%d\n"
+            "error:%lld\n"
+            "repeat_pict:%d\n"
+            "interlaced_frame:%d\n"
+            "top_field_first:%d\n"
+            "palette_has_changed:%d\n"
+            "reordered_opaque:%lld\n"
+            "motion_subsample_log2:%d\n"
+            "sample_rate:%d\n"
+            "channel_layout:%lld\n"
+            "nb_extended_buf:%d\n"
+            "nb_side_data:%d\n"
+            "flags:%d\n"
+            "color_range:%d\n"
+            "color_primaries:%d\n"
+            "color_trc:%d\n"
+            "colorspace:%d\n"
+            "chroma_location:%d\n"
+            "best_effort_timestamp:%lld\n"
+            "pkt_pos:%lld\n"
+            "pkt_duration:%lld\n"
+            "decode_error_flags:%d\n"
+            "channels:%d\n"
+            "pkt_size:%d\n"
+            "===== End =====\n",
+            frame->width,
+            frame->height,
+            frame->nb_samples,
+            frame->format,
+            frame->key_frame,
+            frame->pict_type,
+            frame->sample_aspect_ratio.num, frame->sample_aspect_ratio.den,
+            frame->pts,
+            frame->pkt_pts,
+            frame->pkt_dts,
+            frame->coded_picture_number,
+            frame->display_picture_number,
+            frame->quality,
+            frame->error[0],
+            frame->repeat_pict,
+            frame->interlaced_frame,
+            frame->top_field_first,
+            frame->palette_has_changed,
+            frame->reordered_opaque,
+            frame->motion_subsample_log2,
+            frame->sample_rate,
+            frame->channel_layout,
+            frame->nb_extended_buf,
+            frame->nb_side_data,
+            frame->flags,
+            frame->color_range,
+            frame->color_primaries,
+            frame->color_trc,
+            frame->colorspace,
+            frame->chroma_location,
+            frame->best_effort_timestamp,
+            frame->pkt_pos,
+            frame->pkt_duration,
+            frame->decode_error_flags,
+            frame->channels,
+            frame->pkt_size
+        );
+    } else {
+        av_log(NULL, AV_LOG_DEBUG, "===== Audio encode Frame =====\nNULL\n===== End =====\n");
+    }
+
     if (frame && frame->channel_layout &&
         av_get_channel_layout_nb_channels(frame->channel_layout) != av_frame_get_channels(frame)) {
         av_log(ctx, AV_LOG_ERROR, "Layout indicates a different number of channels than actually present\n");
